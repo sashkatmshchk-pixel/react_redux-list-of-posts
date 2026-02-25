@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Loader } from './Loader';
 import { NewCommentForm } from './NewCommentForm';
 
-import { CommentData } from '../types/Comment';
+import { Comment, CommentData } from '../types/Comment';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
   createCommentForPost,
   deleteCommentById,
   loadCommentsByPostId,
   removeComment,
+  restoreComment,
   selectComments,
   selectCommentsHasError,
   selectCommentsLoaded,
@@ -51,9 +52,14 @@ export const PostDetails: React.FC = () => {
     }
   };
 
-  const deleteComment = async (commentId: number) => {
-    dispatch(removeComment(commentId));
-    await dispatch(deleteCommentById(commentId));
+  const deleteComment = async (comment: Comment, index: number) => {
+    dispatch(removeComment(comment.id));
+
+    try {
+      await dispatch(deleteCommentById(comment.id)).unwrap();
+    } catch (error) {
+      dispatch(restoreComment({ comment, index }));
+    }
   };
 
   return (
@@ -83,7 +89,7 @@ export const PostDetails: React.FC = () => {
           <>
             <p className="title is-4">Comments:</p>
 
-            {comments.map(comment => (
+            {comments.map((comment, index) => (
               <article
                 className="message is-small"
                 key={comment.id}
@@ -99,7 +105,7 @@ export const PostDetails: React.FC = () => {
                     type="button"
                     className="delete is-small"
                     aria-label="delete"
-                    onClick={() => deleteComment(comment.id)}
+                    onClick={() => deleteComment(comment, index)}
                   >
                     delete button
                   </button>

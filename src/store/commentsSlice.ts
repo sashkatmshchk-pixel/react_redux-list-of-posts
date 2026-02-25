@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import * as commentsApi from '../api/comments';
 import { Comment, CommentData } from '../types/Comment';
@@ -7,6 +8,11 @@ type CommentsState = {
   items: Comment[];
   loaded: boolean;
   hasError: boolean;
+};
+
+type RestoreCommentPayload = {
+  comment: Comment;
+  index: number;
 };
 
 const initialState: CommentsState = {
@@ -42,53 +48,55 @@ const commentsSlice = createSlice({
   name: 'comments',
   initialState,
   reducers: {
-    removeComment: (state, action: PayloadAction<number>) => ({
-      ...state,
-      items: state.items.filter(comment => comment.id !== action.payload),
-    }),
-    resetComments: state => ({
-      ...state,
-      items: [],
-      loaded: false,
-      hasError: false,
-    }),
+    removeComment: (state, action: PayloadAction<number>) => {
+      state.items = state.items.filter(
+        comment => comment.id !== action.payload,
+      );
+    },
+    restoreComment: (state, action: PayloadAction<RestoreCommentPayload>) => {
+      const { comment, index } = action.payload;
+      const safeIndex = Math.max(0, Math.min(index, state.items.length));
+
+      state.items.splice(safeIndex, 0, comment);
+      state.hasError = true;
+    },
+    resetComments: state => {
+      state.items = [];
+      state.loaded = false;
+      state.hasError = false;
+    },
   },
   extraReducers: builder => {
     builder
-      .addCase(loadCommentsByPostId.pending, state => ({
-        ...state,
-        items: [],
-        loaded: false,
-        hasError: false,
-      }))
-      .addCase(loadCommentsByPostId.fulfilled, (state, action) => ({
-        ...state,
-        items: action.payload,
-        loaded: true,
-        hasError: false,
-      }))
-      .addCase(loadCommentsByPostId.rejected, state => ({
-        ...state,
-        items: [],
-        loaded: true,
-        hasError: true,
-      }))
-      .addCase(createCommentForPost.fulfilled, (state, action) => ({
-        ...state,
-        items: [...state.items, action.payload],
-      }))
-      .addCase(createCommentForPost.rejected, state => ({
-        ...state,
-        hasError: true,
-      }))
-      .addCase(deleteCommentById.rejected, state => ({
-        ...state,
-        hasError: true,
-      }));
+      .addCase(loadCommentsByPostId.pending, state => {
+        state.items = [];
+        state.loaded = false;
+        state.hasError = false;
+      })
+      .addCase(loadCommentsByPostId.fulfilled, (state, action) => {
+        state.items = action.payload;
+        state.loaded = true;
+        state.hasError = false;
+      })
+      .addCase(loadCommentsByPostId.rejected, state => {
+        state.items = [];
+        state.loaded = true;
+        state.hasError = true;
+      })
+      .addCase(createCommentForPost.fulfilled, (state, action) => {
+        state.items.push(action.payload);
+      })
+      .addCase(createCommentForPost.rejected, state => {
+        state.hasError = true;
+      })
+      .addCase(deleteCommentById.rejected, state => {
+        state.hasError = true;
+      });
   },
 });
 
-export const { removeComment, resetComments } = commentsSlice.actions;
+export const { removeComment, restoreComment, resetComments } =
+  commentsSlice.actions;
 export const commentsReducer = commentsSlice.reducer;
 
 export const selectComments = (state: RootState) => state.comments.items;

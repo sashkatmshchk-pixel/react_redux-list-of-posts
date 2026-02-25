@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { getUserPosts } from '../api/posts';
 import { Post } from '../types/Post';
@@ -26,33 +27,29 @@ const postsSlice = createSlice({
   name: 'posts',
   initialState,
   reducers: {
-    clearPosts: state => ({
-      ...state,
-      items: [],
-      loaded: false,
-      hasError: false,
-    }),
+    clearPosts: state => {
+      state.items = [];
+      state.loaded = false;
+      state.hasError = false;
+    },
   },
   extraReducers: builder => {
     builder
-      .addCase(loadPostsByAuthor.pending, state => ({
-        ...state,
-        items: [],
-        loaded: false,
-        hasError: false,
-      }))
-      .addCase(loadPostsByAuthor.fulfilled, (state, action) => ({
-        ...state,
-        items: action.payload,
-        loaded: true,
-        hasError: false,
-      }))
-      .addCase(loadPostsByAuthor.rejected, state => ({
-        ...state,
-        items: [],
-        loaded: true,
-        hasError: true,
-      }));
+      .addCase(loadPostsByAuthor.pending, state => {
+        state.items = [];
+        state.loaded = false;
+        state.hasError = false;
+      })
+      .addCase(loadPostsByAuthor.fulfilled, (state, action) => {
+        state.items = action.payload;
+        state.loaded = true;
+        state.hasError = false;
+      })
+      .addCase(loadPostsByAuthor.rejected, state => {
+        state.items = [];
+        state.loaded = true;
+        state.hasError = true;
+      });
   },
 });
 
